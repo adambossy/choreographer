@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+from collections import defaultdict
 from enum import Enum, auto
 
 
@@ -37,21 +38,25 @@ class PoseProperty(Enum):
 
 class Pose:
 
-    def __init__(self, properties: [PoseProperty] = None):
+    def __init__(self, name: str, properties: [PoseProperty] = None):
+        self.name = name
         self.properties = properties or []
 
     def add_property(self, _property: PoseProperty):
         self.properties.append(_property)
 
-    def __str__(self):
-        return self.description
+    def __repr__(self) -> str:
+        return self.name # + '\n'.join(map(str, self.properties))
 
 
 class Move:
 
-    def __init__(self, start_pose, end_pose):
-        self.start_pose = start_pose
-        self.end_pose = end_pose
+    def __init__(self, name: str, pose_pairings=[(Pose, Pose)]):
+        self.name = name
+        self.pose_pairings = pose_pairings
+
+    def __repr__(self):
+        return self.name
 
 
 class Modifier:
@@ -67,8 +72,20 @@ class Routine:
         self.moves.append(move)
 
 
+class MoveIndex:
 
+    def __init__(self, moves):
+        self.moves = moves
+        self._build_index()
 
+    def _build_index(self) -> None:
+        self.index = defaultdict(set)
+        for move in self.moves:
+            for start_pose, end_pose in move.pose_pairings:
+                self.index[start_pose].add(move)
+
+    def next(self, end_pose: Pose) -> [Move]:
+        return self.index[end_pose]
 
 
 ## Salsa Positions
@@ -76,32 +93,49 @@ class Routine:
 ##  https://salsahandbook.github.io/output/salsa-positions.html
 
 
-
-
-
 # Facing each other
 # RightToLeft
 # LeftToRight
 # aka Parallel Handhold
 
-open_position = Pose()
+open_position = Pose(name="Open Position")
 open_position.add_property(PoseProperty.FacingEachOther)
 open_position.add_property(PoseProperty.RightToLeft)
 open_position.add_property(PoseProperty.LeftToRight)
 
 parallel_handhold = open_position # alias
 
-closed_position = Pose()
+closed_position = Pose(name="Closed Position")
 closed_position.add_property(PoseProperty.FacingEachOther)
 closed_position.add_property(PoseProperty.LeadersRightHandOnFollowersBack)
+closed_position.add_property(PoseProperty.LeftToRight)
 
-half_open_left_to_right = Pose()
+half_closed_position = Pose(name="Half Closed Position")
+half_closed_position.add_property(PoseProperty.FacingEachOther)
+half_closed_position.add_property(PoseProperty.LeadersRightHandOnFollowersBack)
+
+half_open_left_to_right = Pose(name="Half Open Left To Right")
 half_open_left_to_right.add_property(PoseProperty.FacingEachOther)
 half_open_left_to_right.add_property(PoseProperty.LeftToRight)
 
+half_open_right_to_left = Pose(name="Half Open Right To Left")
+half_open_right_to_left.add_property(PoseProperty.FacingEachOther)
+half_open_right_to_left.add_property(PoseProperty.RightToLeft)
+
+hammerlock = Pose("Hammerlock")
+half_open_right_to_left.add_property(PoseProperty.RightToLeft)
+half_open_right_to_left.add_property(PoseProperty.LeftToRight)
+
+handshake = Pose("handshake")
+handshake.add_property(PoseProperty.RightToRight)
 
 # Thought: should this be a different dataclass, like "Transition?"
-scoop = Move(start_pose=open_position, end_pose=closed_position)
+scoop = Move(
+    name="Scoop",
+    pose_pairings=[
+        (half_open_left_to_right, closed_position)
+    ]
+)
 
 # There are tons of variations, e.g.,:
 #   half closed position to half open left to right 
@@ -111,13 +145,142 @@ scoop = Move(start_pose=open_position, end_pose=closed_position)
 # Should I make different data types for each or can they be encapsulated in a single instance?
 # Should this be a class that can have subclasses? Or somehow make all the variants connected? 
 # How would a cross body lead with a leader's hook turn be called?
-cross_body_lead = Move(start_pose=closed_position, end_pose=closed_position)
+cross_body_lead = Move(
+    name="Cross Body Lead",
+    pose_pairings=[
+        (closed_position, closed_position),
+        (closed_position, open_position),
+        (closed_position, half_open_left_to_right),
+        (half_closed_position, closed_position),
+        (half_closed_position, open_position),
+        (half_closed_position, half_open_left_to_right),
+        (open_position, open_position),
+        (open_position, half_open_left_to_right),
+    ]
+)
+
+# Youtube: https://www.youtube.com/watch?v=kFTB6-gOgII&list=PLzGRdLHrtfBxrumg9IrbyqP2KZfeV1wYi&index=7
+reverse_cross_body_lead = Move(
+    name="Reverse Cross Body Lead",
+    pose_pairings=[
+        (closed_position, closed_position)
+    ]
+)
 
 # Same issue here as with CBL. Can start in open_position or half_open_left_to_right and they effectively do the same thing...
-follower_right_turn = Move(start_pose=open_position, end_pose=half_open_left_to_right)
+follower_right_turn = Move(
+    name="Follower Right Turn",
+    pose_pairings=[
+        (open_position, open_position),
+        (open_position, half_open_left_to_right),
+        (open_position, half_open_right_to_left),
+        (half_open_left_to_right, half_open_left_to_right),
+        (half_open_right_to_left, half_open_right_to_left)
+    ]
+)
+
+follower_left_turn = Move(
+    name="Follower Left Turn",
+    pose_pairings=[
+        (open_position, half_open_left_to_right),
+    ]
+)
+
+new_york_walk = Move(
+    name="New York Walk",
+    pose_pairings=[
+        (half_open_left_to_right, half_open_left_to_right)
+    ]
+)
+
+inside_turn = Move(
+    name="Inside Turn",
+    pose_pairings=[
+        (closed_position, closed_position),
+        (closed_position, half_open_left_to_right)
+    ]
+)
+
+# Youtube: https://www.youtube.com/watch?v=IILWDseswo4&list=PLzGRdLHrtfBxrumg9IrbyqP2KZfeV1wYi&index=6
+outside_turn = Move(
+    name="Outside Turn",
+    pose_pairings=[
+        (half_open_left_to_right, half_open_left_to_right)
+    ]
+)
+
+# Youtube: https://www.youtube.com/watch?v=W-CX-HVW43o&list=PLzGRdLHrtfBxrumg9IrbyqP2KZfeV1wYi&index=8
+the_hesitation = Move(
+    name="The Hesitation",
+    pose_pairings=[
+        (closed_position, closed_position)
+    ]
+)
+
+# Youtube: https://www.youtube.com/watch?v=Yuwjs0Rgc7g&list=PLzGRdLHrtfBxrumg9IrbyqP2KZfeV1wYi&index=9
+# Thought: this is CBL + leaders left turn. Maybe make a "prereqs" field? It really is its own move...
+suave = Move(
+    name="Suave",
+    pose_pairings=[
+        (half_open_left_to_right, half_open_left_to_right),
+    ]
+)
+
+# Youtube: https://www.youtube.com/watch?v=xV0dk0IA8MM&list=PLzGRdLHrtfBxrumg9IrbyqP2KZfeV1wYi&index=10
+# CBL + leaders hook turn
+rejection = Move(
+    name="Rejection",
+    pose_pairings=[
+        (open_position, open_position),
+        (open_position, half_open_left_to_right),
+        (half_open_left_to_right, half_open_left_to_right),
+        (half_open_left_to_right, open_position)
+    ]
+)
 
 
 follower_right_turn_to_cbl = Routine()
 follower_right_turn_to_cbl.add(follower_right_turn)
 follower_right_turn_to_cbl.add(scoop)
 follower_right_turn_to_cbl.add(cross_body_lead)
+
+
+move_index = MoveIndex([
+    scoop,
+    cross_body_lead,
+    reverse_cross_body_lead,
+    follower_right_turn,
+    follower_left_turn,
+    new_york_walk,
+    inside_turn,
+    outside_turn,
+    the_hesitation,
+    suave,
+])
+
+print("What can I do from open position?")
+print('\n'.join(map(str, move_index.next(open_position))))
+print('\n')
+
+
+print("What can I do from closed position?")
+print('\n'.join(map(str, move_index.next(closed_position))))
+print('\n')
+
+
+print("What can I do from half open left to right?")
+print('\n'.join(map(str, move_index.next(half_open_left_to_right))))
+print('\n')
+
+
+# Youtube: https://www.youtube.com/watch?v=DrWfGWTu8DI&list=PLzGRdLHrtfBznMVEaqCVr90dwu08fKu7t&index=2
+challenge_routine = Routine()
+challenge_routine.add(follower_right_turn) # Right To Left handhold
+# challenge_routine.add(hair_comb_with_left_to_right_pickup)
+challenge_routine.add(outside_turn) # Left To Right handhold
+challenge_routine.add(follower_right_turn) # Left To Right with release and pickup
+challenge_routine.add(cross_body_lead) # With pickup to closed position
+challenge_routine.add(cross_body_lead) # With transition to open position
+
+
+# Youtube: 
