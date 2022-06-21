@@ -167,6 +167,25 @@ reverse_cross_body_lead = Move(
     ]
 )
 
+# Youtube: https://www.youtube.com/watch?v=k3b5gh1V_Ts
+back_spot_turn = Move(
+    name="Back Spot Turn",
+    pose_pairings=[
+        (half_open_left_to_right, closed_position),
+        (half_open_left_to_right, half_closed_position),
+        (closed_position, closed_position),
+        (closed_position, half_closed_position),
+    ]
+)
+
+lead_right_turn = Move(
+    name="Lead Right Turn",
+    pose_pairings=[
+        (half_open_left_to_right, half_open_left_to_right),
+        # TODO add more pairings
+    ]
+)
+
 # Same issue here as with CBL. Can start in open_position or half_open_left_to_right and they effectively do the same thing...
 follower_right_turn = Move(
     name="Follower Right Turn",
@@ -179,10 +198,26 @@ follower_right_turn = Move(
     ]
 )
 
+lead_left_turn = Move(
+    name="Lead Left Turn",
+    pose_pairings=[
+        (half_open_left_to_right, half_open_left_to_right),
+        # TODO add more pairings
+    ]
+)
+
 follower_left_turn = Move(
     name="Follower Left Turn",
     pose_pairings=[
         (open_position, half_open_left_to_right),
+    ]
+)
+
+lead_hook_turn = Move(
+    name="Lead Hook Turn",
+    pose_pairings=[
+        (half_open_left_to_right, handshake),
+        # TODO add more pairings
     ]
 )
 
@@ -198,6 +233,13 @@ inside_turn = Move(
     pose_pairings=[
         (closed_position, closed_position),
         (closed_position, half_open_left_to_right)
+    ]
+)
+
+reverse_inside_turn = Move(
+    name="Reverse Inside Turn",
+    pose_pairings=[
+        (half_open_left_to_right, half_open_left_to_right),
     ]
 )
 
@@ -249,13 +291,16 @@ move_index = MoveIndex([
     scoop,
     cross_body_lead,
     reverse_cross_body_lead,
+    back_spot_turn,
     follower_right_turn,
     follower_left_turn,
     new_york_walk,
     inside_turn,
+    reverse_inside_turn,
     outside_turn,
     the_hesitation,
     suave,
+    rejection,
 ])
 
 print("What can I do from open position?")
@@ -283,4 +328,23 @@ challenge_routine.add(cross_body_lead) # With pickup to closed position
 challenge_routine.add(cross_body_lead) # With transition to open position
 
 
-# Youtube: 
+# Nieves Salsa Class 2022/06/20
+nieves_2022_06_20_routine = Routine()
+nieves_2022_06_20_routine.add(cross_body_lead)
+## TODO: add open break variation
+nieves_2022_06_20_routine.add(back_spot_turn)
+## TODO: add modifier to indicate the lead doesn't fully close, but transitions through
+nieves_2022_06_20_routine.add(cross_body_lead) 
+## TODO: add modifier that the lead transitions from half-closed to half-open left to right
+nieves_2022_06_20_routine.add(follower_right_turn)
+nieves_2022_06_20_routine.add(reverse_inside_turn)
+nieves_2022_06_20_routine.add(lead_left_turn)
+# The next part could be a separate routine!
+nieves_2022_06_20_routine.add(follower_right_turn)
+nieves_2022_06_20_routine.add(lead_right_turn)
+nieves_2022_06_20_routine.add(lead_hook_turn)
+# TODO add follower's booty roll
+
+
+# TODO add jun 17 salsa salsa class (enchuflas!)
+
